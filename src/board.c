@@ -1,44 +1,58 @@
-#include "board.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include "board.h"
 
-void board_init(Board* board, int size) {
-    board->size = size;
+char** create_board(int size) {
+    char** board = (char**)malloc(size * sizeof(char*));
+    for (int i = 0; i < size; i++) {
+        board[i] = (char*)malloc(size * sizeof(char));
+    }
+    return board;
+}
+
+void free_board(char** board, int size) {
+    for (int i = 0; i < size; i++) {
+        free(board[i]);
+    }
+    free(board);
+}
+
+void init_board(char** board, int size) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            board->cells[i][j] = ' ';
+            board[i][j] = ' ';
         }
     }
 }
 
-void board_print(const Board* board) {
-    printf("\n   ");
-    for (int i = 1; i <= board->size; i++) {
-        printf("%2d ", i);
+void print_board(char** board, int size) {
+    printf("   ");
+    for (int j = 1; j <= size; j++) {
+        printf(" %2d", j);
     }
     printf("\n");
-    
-    for (int i = 0; i < board->size; i++) {
+
+    for (int i = 0; i < size; i++) {
         printf("%2d ", i + 1);
-        for (int j = 0; j < board->size; j++) {
-            printf(" %c ", board->cells[i][j]);
+        for (int j = 0; j < size; j++) {
+            printf("[%c]", board[i][j]);
         }
         printf("\n");
     }
-    printf("\n");
 }
 
-int board_is_empty(const Board* board, int row, int col) {
-    return board->cells[row][col] == ' ';
+int is_cell_empty(char** board, int row, int col) {
+    return board[row][col] == ' ';
 }
 
-void board_set(Board* board, int row, int col, char symbol) {
-    board->cells[row][col] = symbol;
+void set_cell(char** board, int row, int col, char symbol) {
+    board[row][col] = symbol;
 }
 
-int board_is_full(const Board* board) {
-    for (int i = 0; i < board->size; i++) {
-        for (int j = 0; j < board->size; j++) {
-            if (board->cells[i][j] == ' ') {
+int is_board_full(char** board, int size) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            if (board[i][j] == ' ') {
                 return 0;
             }
         }
