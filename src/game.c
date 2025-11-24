@@ -58,6 +58,7 @@ void run_game() {
     int time_up = 0;
 
     while (!winner && !is_board_full(board, size)) {
+        system("cls");
         if (difftime(time(NULL), start_time) >= time_limit) {
             time_up = 1;
             break;
