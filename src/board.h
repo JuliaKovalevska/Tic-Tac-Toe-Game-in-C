@@ -1,18 +1,14 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#define MAX_SIZE 10
 #define MIN_SIZE 5
 
-typedef struct {
-    char cells[MAX_SIZE][MAX_SIZE];
-    int size;
-} Board;
-
-void board_init(Board* board, int size);
-void board_print(const Board* board);
-int board_is_empty(const Board* board, int row, int col);
-void board_set(Board* board, int row, int col, char symbol);
-int board_is_full(const Board* board);
+char** create_board(int size);
+void free_board(char** board, int size);
+void init_board(char** board, int size);
+void print_board(char** board, int size);
+int is_cell_empty(char** board, int row, int col);
+void set_cell(char** board, int row, int col, char symbol);
+int is_board_full(char** board, int size);
 
 #endif
