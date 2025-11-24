@@ -1,46 +1,24 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11
-SRCDIR = src
-OBJDIR = obj
-BINDIR = bin
-TESTDIR = tests
+CFLAGS = -Wall -Wextra -std=c99
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = bin
 
-SOURCES = $(wildcard $(SRCDIR)/*.c)
-OBJECTS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
-TARGET = $(BINDIR)/tictactoe
-
-TEST_SOURCES = $(wildcard $(TESTDIR)/*.c)
-TEST_OBJECTS = $(patsubst $(TESTDIR)/%.c,$(OBJDIR)/test_%.o,$(TEST_SOURCES))
-TEST_TARGET = $(BINDIR)/test_runner
-
-LIB_SOURCES = $(filter-out $(SRCDIR)/main.c,$(SOURCES))
-LIB_OBJECTS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(LIB_SOURCES))
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+TARGET = $(BIN_DIR)/game.exe
 
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS) | $(BINDIR)
+$(TARGET): $(OBJS)
+	@mkdir -p $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/test_%.o: $(TESTDIR)/%.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -I$(SRCDIR) -c -o $@ $<
-
-$(TEST_TARGET): $(TEST_OBJECTS) $(LIB_OBJECTS) | $(BINDIR)
-	$(CC) $(CFLAGS) -o $@ $^
-
-test: $(TEST_TARGET)
-	@echo "Running tests..."
-	@$(TEST_TARGET)
-
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
-
-$(BINDIR):
-	mkdir -p $(BINDIR)
-
 clean:
-	rm -rf $(OBJDIR) $(BINDIR)
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
-.PHONY: all clean test
+.PHONY: all clean
