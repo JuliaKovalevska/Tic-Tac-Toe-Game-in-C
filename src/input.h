@@ -1,8 +1,10 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-int input_read_board_size(void);
-char input_read_player_symbol(void);
-int input_read_move(int* row, int* col, int board_size);
+#include <time.h>
 
-#endif
+int get_board_size();
+char get_player_symbol();
+int get_move_coordinates(int size, int *row, int *col, time_t start_time, double time_limit);
+
+#endif 
