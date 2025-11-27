@@ -1,10 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
-#include <conio.h>
-#include <windows.h>
+#include <time.h>
 #include "input.h"
 #include "board.h"
 #include "utils.h"
+
+#ifdef _WIN32
+    #include <windows.h>
+    #include <conio.h>
+#else
+    #include <unistd.h>
+    #include <termios.h>
+#endif
 
 int get_board_size() {
     int size;
@@ -36,7 +44,7 @@ char get_player_symbol() {
         clear_input_buffer();
     }
 
-    if (symbol == 'X'  symbol == 'O') {
+    if (symbol == 'X' || symbol == 'O') {
         return symbol;
     }
     
@@ -53,58 +61,136 @@ char get_player_symbol() {
 }
 
 int get_move_coordinates(int size, int *row, int *col, time_t start_time, double time_limit) {
-    char buffer[256] = {0};
-    int index = 0;
-    
+    #ifdef _WIN32
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD prev_mode;
+    GetConsoleMode(hStdin, &prev_mode);
+    SetConsoleMode(hStdin, ENABLE_EXTENDED_FLAGS | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT);
+
+    INPUT_RECORD irInBuf[128];
+    DWORD cNumRead;
+
     while (1) {
         double elapsed = difftime(time(NULL), start_time);
         double remaining = time_limit - elapsed;
         
         if (remaining <= 0) {
+            SetConsoleMode(hStdin, prev_mode);
             return 0;
         }
         
         int min = (int)remaining / 60;
         int sec = (int)remaining % 60;
         
-        printf("\rTime left: %02d:%02d | Enter row col: %s   ", min, sec, buffer);
+        printf("\rTime left: %02d:%02d | Click to move (Q to quit)    ", min, sec);
         fflush(stdout);
         
-        if (_kbhit()) {
-            int ch = _getch();
-            
-            if (ch == '\r'  ch == '\n') {
-                printf("\n");
+        DWORD num_events = 0;
+        GetNumberOfConsoleInputEvents(hStdin, &num_events);
+
+        if (num_events > 0) {
+            ReadConsoleInput(hStdin, irInBuf, 128, &cNumRead);
+
+            for (DWORD i = 0; i < cNumRead; i++) {
                 
-                int r, c;
-                if (sscanf(buffer, "%d %d", &r, &c) == 2) {
-                    if (r >= 1 && r <= size && c >= 1 && c <= size) {
-                        *row = r - 1;
-                        *col = c - 1;
-                        return 1;
-                    } else {
-                        printf("Invalid coordinates. Range is 1..%d.\n", size);
+                if (irInBuf[i].EventType == KEY_EVENT && irInBuf[i].Event.KeyEvent.bKeyDown) {
+                    char key = irInBuf[i].Event.KeyEvent.uChar.AsciiChar;
+                    if (key == 'q' || key == 'Q' || irInBuf[i].Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE) {
+                        SetConsoleMode(hStdin, prev_mode);
+                        exit(0);
                     }
-                } else {
-                    printf("Invalid format. Use: row col (e.g. 1 2)\n");
                 }
-                
-                memset(buffer, 0, sizeof(buffer));
-                index = 0;
-                
-            } else if (ch == '\b' || ch == 127) {
-                if (index > 0) {
-                    buffer[--index] = '\0';
-                    printf("\rTime left: %02d:%02d | Enter row col: %s   ", min, sec, buffer);
-                }
-            } else if (isprint(ch)) {
-                if (index < (int)(sizeof(buffer) - 1)) {
-                    buffer[index++] = (char)ch;
-                    buffer[index] = '\0';
+
+                if (irInBuf[i].EventType == MOUSE_EVENT) {
+                    MOUSE_EVENT_RECORD mer = irInBuf[i].Event.MouseEvent;
+                    
+                    if (mer.dwEventFlags == MOUSE_MOVED) {
+                        continue;
+                    }
+
+                    if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
+                        int mouseX = mer.dwMousePosition.X;
+                        int mouseY = mer.dwMousePosition.Y;
+
+                        int r = mouseY - 2; 
+                        int c = (mouseX - 3) / 3;
+
+                        if (r >= 0 && r < size && c >= 0 && c < size) {
+                            if (mouseX >= 3) {
+                                *row = r;
+                                *col = c;
+                                SetConsoleMode(hStdin, prev_mode);
+                                return 1;
+                            }
+                        }
+                    }
                 }
             }
         }
-        
-        Sleep(100);
+        Sleep(50);
     }
+    #else
+    enable_mouse_input();
+    
+    while(1) {
+        double elapsed = difftime(time(NULL), start_time);
+        double remaining = time_limit - elapsed;
+        
+        if (remaining <= 0) {
+            disable_mouse_input();
+            return 0;
+        }
+
+        int min = (int)remaining / 60;
+        int sec = (int)remaining % 60;
+        
+        printf("\rTime left: %02d:%02d | Click to move (Q to quit)    ", min, sec);
+        fflush(stdout);
+
+        fd_set set;
+        struct timeval timeout;
+        FD_ZERO(&set);
+        FD_SET(STDIN_FILENO, &set);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 100000; 
+
+        int rv = select(STDIN_FILENO + 1, &set, NULL, NULL, &timeout);
+
+        if (rv > 0) {
+            unsigned char buf[6];
+            if (read(STDIN_FILENO, buf, 1) > 0) {
+                if (buf[0] == 'q' || buf[0] == 'Q') {
+                    disable_mouse_input();
+                    exit(0);
+                }
+
+                if (buf[0] == 0x1B) {
+                    if (read(STDIN_FILENO, buf, 1) > 0 && buf[0] == '[') {
+                        if (read(STDIN_FILENO, buf, 1) > 0 && buf[0] == 'M') {
+                            read(STDIN_FILENO, &buf[3], 3); 
+                            
+                            int button = buf[3] - 32;
+                            int x = buf[4] - 33; 
+                            int y = buf[5] - 33; 
+
+                            if (button == 0) { 
+                                int r = y - 1; 
+                                int c = (x - 3) / 3;
+
+                                if (r >= 0 && r < size && c >= 0 && c < size) {
+                                    if (x >= 3) {
+                                        *row = r;
+                                        *col = c;
+                                        disable_mouse_input();
+                                        return 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #endif
 }

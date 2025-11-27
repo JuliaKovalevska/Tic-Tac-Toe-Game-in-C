@@ -4,6 +4,7 @@
 #include "game.h"
 #include "board.h"
 #include "input.h"
+#include "utils.h" 
 
 int check_direction(char** board, int size, int row, int col, int dRow, int dCol, char symbol) {
     int count = 0;
@@ -41,6 +42,7 @@ void run_game() {
     int size = get_board_size();
     char** board = create_board(size);
     
+    
     char p1_symbol = get_player_symbol();
     char p2_symbol = (p1_symbol == 'X') ? 'O' : 'X';
     
@@ -58,6 +60,7 @@ void run_game() {
     int time_up = 0;
 
     while (!winner && !is_board_full(board, size)) {
+        clear_screen(); 
         if (difftime(time(NULL), start_time) >= time_limit) {
             time_up = 1;
             break;
@@ -77,7 +80,7 @@ void run_game() {
             if (is_cell_empty(board, row, col)) {
                 break;
             } else {
-                printf("This cell is already occupied\n");
+                printf("\nThis cell is already occupied\n");
                 printf("Player %d's turn (%c).\n", player_num, current_symbol);
             }
         }
@@ -93,6 +96,7 @@ void run_game() {
         }
     }
     
+    clear_screen();
     print_board(board, size);
     
     if (time_up) {
@@ -104,5 +108,5 @@ void run_game() {
         printf("Draw! The board is full.\n");
     }
 
-    free_board(board, size);
+    // free_board(board, size);
 }
