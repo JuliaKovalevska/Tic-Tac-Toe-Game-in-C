@@ -87,15 +87,19 @@ Third-party libraries and dependencies
 
 Project structure (files and functions)
 ---------------------------------------
-- src/
-  - main.c
-  - game.c
-  - board.c
-  - input.c
-  - utils.c
-  - game.h, board.h, input.h, utils.h
-- Makefile
-- README.md
+├── src/                    
+│   ├── main.c             
+│   ├── game.c / .h        
+│   ├── board.c / .h        
+│   ├── input.c / .h       
+│   └── utils.c / .h        
+├── tests/                 
+│   └── test_main.c        
+├── bin/                    
+├── obj/                   
+├── .gitignore
+├── Makefile               
+└── README.md    
 
 Edge cases
 ----------
@@ -103,10 +107,16 @@ Edge cases
 - Invalid coordinate format — ask again.
 - Attempt to place on an occupied cell — print "This cell is already occupied" and do not change turn.
 
-Build and run
--------------
-With Makefile:
-```
-$ make
-$ ./bin/tictactoe
-```
+How to Build and Run:
+1. Compile
+Open your terminal in the project root directory and run:
+**make**
+2. Run
+After a successful build, launch the game:
+On macOS / Linux:
+**./bin/game**
+On Windows:
+**./bin/game.exe**
+3. Clean Optional
+To remove compiled files and executables:
+**make clean**
